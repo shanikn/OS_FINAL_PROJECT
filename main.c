@@ -1,5 +1,11 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
 #include <dlfcn.h>
 #include <pthread.h>
+
+#include "plugins/plugin_sdk.h"
 
 // main application implemintation
 // entry point for constructing and running the pipeline system

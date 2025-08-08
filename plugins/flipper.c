@@ -1,3 +1,7 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
 #include "plugin_sdk.h"
 
 const char* plugin_get_name(void);
