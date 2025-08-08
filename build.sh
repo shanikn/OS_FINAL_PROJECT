@@ -1,0 +1,1 @@
+#compiles the main application intothe output directory

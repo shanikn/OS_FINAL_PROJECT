@@ -1,3 +1,6 @@
+#ifndef PLUGIN_SDK_H
+#define PLUGIN_SDK_H
+
 /**
  * Get the plugin's name
  * @return The plugin's name (should not be modified or freed)
@@ -41,3 +44,5 @@ void plugin_attach(const char* (*next_place_work)(const char*));
  * @return NULL on success, error message on failure
  */
 const char* plugin_wait_finished(void);
+
+#endif
