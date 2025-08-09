@@ -4,3 +4,18 @@
 
 #include "monitor.h"
 
+//TODO: #2 add functions from monitor.h
+
+int monitor_init(monitor_t* monitor);
+
+void monitor_destroy(monitor_t* monitor);
+
+void monitor_signal(monitor_t* monitor);
+
+void monitor_reset(monitor_t* monitor);
+
+int monitor_wait(monitor_t* monitor);
+
+
+//TODO: #1 implement functions
+
