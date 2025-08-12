@@ -4,21 +4,6 @@
 
 #include "monitor.h"
 
-<<<<<<< HEAD
-int monitor_init(monitor_t* monitor);
-
-void monitor_destroy(monitor_t* monitor);
-
-void monitor_signal(monitor_t* monitor);
-
-void monitor_reset(monitor_t* monitor);
-
-int monitor_wait(monitor_t* monitor);
-
-
-//TODO: #1 implement functions
-=======
-
 int monitor_init(monitor_t* monitor){
     // it's NULL
     if(!monitor){
@@ -96,5 +81,3 @@ int monitor_wait(monitor_t* monitor){
     // on success
     return 0;
 }
->>>>>>> shanikn/issue1
-
