@@ -4,10 +4,10 @@
  * lot of headaches and frustrations later on in case of a bug. 
  */
 
- #include <pthread.h>   // Allowed: pthread library
-#include <stdio.h>     // Standard I/O (printf, etc.)
-#include <stdlib.h>    // Standard library (malloc, free, etc.)
-#include <unistd.h>    // UNIX standard (usleep)
+#include <pthread.h>   
+#include <stdio.h>     
+#include <stdlib.h>    
+#include <unistd.h>
 
 #include "monitor.h"
 

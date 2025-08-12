@@ -1,6 +1,8 @@
 #ifndef CONSUMER_PRODUCER_H
 #define CONSUMER_PRODUCER_H
 
+#include "monitor.h"
+
 /**
  * Consumer-Producer queue structure for thread-safe producer-consumer pattern
  * Now using monitors for simpler implementation

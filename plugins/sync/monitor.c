@@ -4,6 +4,7 @@
 
 #include "monitor.h"
 
+
 int monitor_init(monitor_t* monitor){
     // it's NULL
     if(!monitor){
@@ -81,3 +82,4 @@ int monitor_wait(monitor_t* monitor){
     // on success
     return 0;
 }
+
