@@ -7,12 +7,12 @@
 - [x] Build script setup and fixes
 - [x] Consumer-producer header file (consumer_producer.h)
 - [x] Consumer-producer structure definition
-- [x] consumer_producer_init() implementation ⭐
+- [x] consumer_producer_init() implementation 
+- [x] consumer_producer_destroy() - free memory and destroy monitors
+- [x] consumer_producer_put() - add items (blocks when full)
 
 ## 🔧 CURRENT WORK - Consumer-Producer Queue:
-- [ ] consumer_producer_destroy() - free memory and destroy monitors
-- [ ] consumer_producer_put() - add items (blocks when full)
-- [ ] consumer_producer_get() - remove items (blocks when empty)  
+- [ ] consumer_producer_get() - remove items (blocks when empty) ⭐  
 - [ ] consumer_producer_signal_finished() - signal shutdown
 - [ ] consumer_producer_wait_finished() - wait for shutdown
 - [ ] consumer_producer_test.c - comprehensive tests

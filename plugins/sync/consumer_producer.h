@@ -33,8 +33,7 @@ const char* consumer_producer_init(consumer_producer_t* queue, int capacity);
  * Destroy a consumer-producer queue and free its resources
  * @param queue Pointer to queue structure
  */
-void consumer_producer_destroy(consumer_producer_t* queue);
-
+void consumer_producer_destroy(consumer_producer_t* queue); 
 
 /**
  * Add an item to the queue (producer).
@@ -44,6 +43,8 @@ void consumer_producer_destroy(consumer_producer_t* queue);
  * @return NULL on success, error message on failure
  */
 const char* consumer_producer_put(consumer_producer_t* queue, const char* item);
+
+added notes.md for project tracking + implemented producer_consumer_init
 
 /**
  * Remove an item from the queue (consumer) and returns it.
