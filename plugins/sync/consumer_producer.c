@@ -114,9 +114,7 @@ const char* consumer_producer_put(consumer_producer_t* queue, const char* item){
     //update other queue properties
     queue->count++;
     queue->tail=(queue->tail+1)%queue->capacity; //circular buffer means the tail can't be out of bound
-    if(queue->count==queue->capacity){
-        monitor_reset(&queue->not_full_monitor);
-    }
+    
     monitor_signal(&queue->not_empty_monitor);
     
     // on success
@@ -130,16 +128,55 @@ const char* consumer_producer_put(consumer_producer_t* queue, const char* item){
  * @return String item or NULL if queue is empty
  */
 char* consumer_producer_get(consumer_producer_t* queue){
-    // error: can't remove an item from a null queue
+    // error: queue is empty
     if(!queue){
-        return "queue is NULL";
+        return NULL;
     }
 
+    // block the item as long as the queue is empty
+    while(queue->count==0){
+        monitor_wait(&queue->not_empty_monitor);    
+    }
+
+    // remove an item from the head (end point- where we extract next item)
+    char* item= queue->items[queue->head];
+    queue->items[queue->head]= NULL;
+
+    //update other queue properties
+    queue->count--;
+    queue->head=(queue->head+1)%queue->capacity; //circular buffer means the tail can't be out of bound
+
+    monitor_signal(&queue->not_full_monitor);
     
+    // on success
+    return item;
 }
 
-void consumer_producer_signal_finished(consumer_producer_t* queue);
+/**
+ * Signal that processing is finished
+ * @param queue Pointer to queue structure
+ */
+void consumer_producer_signal_finished(consumer_producer_t* queue){
+    // error: queue is empty
+    if(!queue){
+        return;
+    }
 
-int consumer_producer_wait_finished(consumer_producer_t* queue);
+    monitor_signal(&queue->finished_monitor);
+}
 
+/**
+ * Wait for processing to be finished
+ * @param queue Pointer to queue structure
+ * @return 0 on success, -1 on timeout
+ */
+int consumer_producer_wait_finished(consumer_producer_t* queue){
+    // error: queue is empty
+    if(!queue){
+        return -1;
+    }
+
+    // monitor_wait function returns "-1" on error
+    return monitor_wait(&queue->finished_monitor);
+}
 

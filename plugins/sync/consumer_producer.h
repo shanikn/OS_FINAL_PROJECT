@@ -44,7 +44,6 @@ void consumer_producer_destroy(consumer_producer_t* queue);
  */
 const char* consumer_producer_put(consumer_producer_t* queue, const char* item);
 
-added notes.md for project tracking + implemented producer_consumer_init
 
 /**
  * Remove an item from the queue (consumer) and returns it.

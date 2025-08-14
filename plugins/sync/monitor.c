@@ -67,7 +67,6 @@ int monitor_wait(monitor_t* monitor){
     if(!monitor){
         return -1;  
     }    
-    int rc=0;
 
     pthread_mutex_lock(&monitor->mutex);
     
