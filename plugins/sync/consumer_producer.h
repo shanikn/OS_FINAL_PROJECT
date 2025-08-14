@@ -1,20 +1,23 @@
 #ifndef CONSUMER_PRODUCER_H
 #define CONSUMER_PRODUCER_H
 
+#include "monitor.h"
+
 /**
  * Consumer-Producer queue structure for thread-safe producer-consumer pattern
  * Now using monitors for simpler implementation
  */
 typedef struct
 {
-    char** items; /* Array of string pointers */
-    int capacity; /* Maximum number of items */
-    int count; /* Current number of items */
-    int head; /* Index of first item */
-    int tail; /* Index of next insertion point */
-    monitor_t not_full_monitor; /* Monitor for "not full" state */
-    monitor_t not_empty_monitor; /* Monitor for "not empty" state */
-    monitor_t finished_monitor; /* Monitor for finished signal */
+char** items; /* Array of string pointers */
+int capacity; /* Maximum number of items */
+int count; /* Current number of items */
+int head; /* Index of first item */
+int tail; /* Index of next insertion point */
+pthread_mutex_t mutex; /* Mutex for thread-safe access */
+monitor_t not_full_monitor; /* Monitor for "not full" state */
+monitor_t not_empty_monitor; /* Monitor for "not empty" state */
+ monitor_t finished_monitor; /* Monitor for finished signal */
 } consumer_producer_t;
 
 
@@ -31,8 +34,7 @@ const char* consumer_producer_init(consumer_producer_t* queue, int capacity);
  * Destroy a consumer-producer queue and free its resources
  * @param queue Pointer to queue structure
  */
-void consumer_producer_destroy(consumer_producer_t* queue);
-
+void consumer_producer_destroy(consumer_producer_t* queue); 
 
 /**
  * Add an item to the queue (producer).
@@ -42,6 +44,7 @@ void consumer_producer_destroy(consumer_producer_t* queue);
  * @return NULL on success, error message on failure
  */
 const char* consumer_producer_put(consumer_producer_t* queue, const char* item);
+
 
 /**
  * Remove an item from the queue (consumer) and returns it.
