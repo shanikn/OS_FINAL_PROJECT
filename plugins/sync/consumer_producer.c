@@ -5,10 +5,7 @@
 
 #include "consumer_producer.h"
 
-
- // we use mutex from pthread.h to make sure only 1 thread can access a shared resoutce at a time (to protect the critical section)
-
- /**
+/**
  * Initialize a consumer-producer queue
  * @param queue Pointer to queue structure
  * @param capacity Maximum number of items
@@ -109,23 +106,24 @@ const char* consumer_producer_put(consumer_producer_t* queue, const char* item){
         return "item is NULL";
     }
 
-    // block the item as long as the queue is full
-    while(queue->capacity==queue->count){
+    // Wait until queue is not full - keep waiting until space available
+    while(queue->count >= queue->capacity){
         monitor_wait(&queue->not_full_monitor);    
     }
 
     // add item at tail (entry point- next available index)
-    queue->items[queue->tail]=strdup(item);
+    queue->items[queue->tail] = strdup(item);
 
-    // error: couldnt add item to queue
+    // error: couldn't add item to queue
     if(!(queue->items[queue->tail])){
         return "failed adding item to the queue";
     }
 
     //update other queue properties
     queue->count++;
-    queue->tail=(queue->tail+1)%queue->capacity; //circular buffer means the tail can't be out of bound
+    queue->tail = (queue->tail + 1) % queue->capacity; //circular buffer
     
+    // Signal that queue is not empty (someone might be waiting)
     monitor_signal(&queue->not_empty_monitor);
     
     // on success
@@ -136,30 +134,31 @@ const char* consumer_producer_put(consumer_producer_t* queue, const char* item){
  * Remove an item from the queue (consumer) and returns it.
  * Blocks if queue is empty.
  * @param queue Pointer to queue structure
- * @return String item or NULL if queue is empty
+ * @return String item or NULL if error (never NULL for empty queue - blocks instead)
  */
 char* consumer_producer_get(consumer_producer_t* queue){
-    // error: queue is empty
+    // error: queue is NULL
     if(!queue){
-        return NULL;
+        return NULL; // Only return NULL on error, not empty queue
     }
 
-    // block the item as long as the queue is empty
-    while(queue->count==0){
+    // Wait until queue is not empty (blocks until item available)
+    while(queue->count == 0){
         monitor_wait(&queue->not_empty_monitor);    
     }
 
-    // remove an item from the head (end point- where we extract next item)
-    char* item= queue->items[queue->head];
-    queue->items[queue->head]= NULL;
+    // remove an item from the head (where we extract next item)
+    char* item = queue->items[queue->head];
+    queue->items[queue->head] = NULL;
 
     //update other queue properties
     queue->count--;
-    queue->head=(queue->head+1)%queue->capacity; //circular buffer means the tail can't be out of bound
+    queue->head = (queue->head + 1) % queue->capacity; //circular buffer
 
+    // Signal that queue is not full (producer might be waiting)
     monitor_signal(&queue->not_full_monitor);
     
-    // on success
+    // on success - return the item (never NULL for empty queue)
     return item;
 }
 
@@ -190,4 +189,3 @@ int consumer_producer_wait_finished(consumer_producer_t* queue){
     // monitor_wait function returns "-1" on error
     return monitor_wait(&queue->finished_monitor);
 }
-

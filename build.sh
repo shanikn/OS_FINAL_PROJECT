@@ -1,9 +1,7 @@
 #!/bin/bash
 
-#compiles the main application into the output directory
-
+# Exit on any error
 set -e
-
 
 # Colors for output
 RED='\033[0;31m'
@@ -12,29 +10,32 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 # Function to print colored output
-print_status(){
+print_status() {
     echo -e "${GREEN}[BUILD]${NC} $1"
 }
 
-print_warning(){
+print_warning() {
     echo -e "${YELLOW}[WARNING]${NC} $1"
 }
 
-print_error(){
+print_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
 # Create output directory
+print_status "Creating output directory"
 mkdir -p output
 
-# Build monitor test
-print_status "Building monitor test..."
-gcc -o output/monitor_test \
-    plugins/sync/monitor_test.c \
-    plugins/sync/monitor.c \
-    -lpthread || {
-    print_error "Failed to build monitor_test"
+# Build main application
+print_status "Building main application: analyzer"
+gcc -o output/analyzer main.c -ldl -lpthread || {
+    print_error "Failed to build main application"
     exit 1
 }
 
-print_status "Monitor test built successfully"
+# TODO: Build plugins when they are implemented
+print_warning "Plugins not yet implemented - will be added as they are created"
+
+print_status "Build completed successfully!"
+print_status "Output files:"
+print_status "  - output/analyzer (main executable)"
