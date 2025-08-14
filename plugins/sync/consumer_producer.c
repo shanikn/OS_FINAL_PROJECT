@@ -73,7 +73,18 @@ void consumer_producer_destroy(consumer_producer_t* queue){
         return;
     }
 
-    free(queue->items);
+    // free all items with error checks
+    if(queue->items){
+        // capacity and not count beacuse of the circular buffer
+        for(int i=0; i<queue->capacity; i++){
+            // free the item in this index if there is one
+            if(queue->items[i]){
+                free(queue->items[i]);
+                queue->items[i]= NULL;
+            }
+        }
+        free(queue->items);
+    }
     
     monitor_destroy(&queue->not_full_monitor);
     monitor_destroy(&queue->not_empty_monitor);

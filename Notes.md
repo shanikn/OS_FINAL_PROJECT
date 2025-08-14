@@ -14,8 +14,8 @@
 - [x] consumer_producer_put() - add items (blocks when full)
 - [x] consumer_producer_get() - remove items (blocks when empty)   
 - [x] consumer_producer_signal_finished() - signal shutdown 
-- [ ] consumer_producer_wait_finished() - wait for shutdown ⭐
-- [ ] consumer_producer_test.c - comprehensive tests
+- [x] consumer_producer_wait_finished() - wait for shutdown 
+- [ ] consumer_producer_test.c - comprehensive tests ⭐
 - [ ] Update build.sh to compile consumer-producer test
 - [ ] Run and debug consumer-producer tests
 
