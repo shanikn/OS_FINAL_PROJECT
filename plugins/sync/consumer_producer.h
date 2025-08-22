@@ -17,7 +17,7 @@ int tail; /* Index of next insertion point */
 pthread_mutex_t mutex; /* Mutex for thread-safe access */
 monitor_t not_full_monitor; /* Monitor for "not full" state */
 monitor_t not_empty_monitor; /* Monitor for "not empty" state */
- monitor_t finished_monitor; /* Monitor for finished signal */
+monitor_t finished_monitor; /* Monitor for finished signal */
 } consumer_producer_t;
 
 

@@ -5,6 +5,7 @@
 
 #include "consumer_producer.h"
 
+
 /**
  * Initialize a consumer-producer queue
  * @param queue Pointer to queue structure
@@ -56,9 +57,16 @@ const char* consumer_producer_init(consumer_producer_t* queue, int capacity){
         return "failed initializing finished_monitor";
     }
 
+    // to prevent race conditions
+    // clean up all monitors and memory if mutex init failed
+    if(pthread_mutex_init(&queue->mutex, NULL) != 0){
+        return "failed initializing mutex";
+    }
+
     // on success
     return NULL;
 }
+
 
 /**
  * Destroy a consumer-producer queue and free its resources
@@ -83,10 +91,14 @@ void consumer_producer_destroy(consumer_producer_t* queue){
         free(queue->items);
     }
     
+    //clean up the mutex (to prevent race conditions)
+    pthread_mutex_destroy(&queue->mutex);
+
     monitor_destroy(&queue->not_full_monitor);
     monitor_destroy(&queue->not_empty_monitor);
     monitor_destroy(&queue->finished_monitor);
 }
+
 
 /**
  * Add an item to the queue (producer).
@@ -106,25 +118,37 @@ const char* consumer_producer_put(consumer_producer_t* queue, const char* item){
         return "item is NULL";
     }
 
+    // critical section ahead 
+    pthread_mutex_lock(&queue->mutex);
     // Wait until queue is not full - keep waiting until space available
     while(queue->count >= queue->capacity){
+        // unlock before wait
+        pthread_mutex_unlock(&queue->mutex);
         monitor_wait(&queue->not_full_monitor);    
+        // and lock back after
+        pthread_mutex_lock(&queue->mutex);
     }
+
+
 
     // add item at tail (entry point- next available index)
     queue->items[queue->tail] = strdup(item);
 
     // error: couldn't add item to queue
     if(!(queue->items[queue->tail])){
+        pthread_mutex_unlock(&queue->mutex);
         return "failed adding item to the queue";
     }
 
     //update other queue properties
     queue->count++;
-    queue->tail = (queue->tail + 1) % queue->capacity; //circular buffer
+    queue->tail = (queue->tail + 1) % queue->capacity; // circular buffer causes this calculation method
     
     // Signal that queue is not empty (someone might be waiting)
     monitor_signal(&queue->not_empty_monitor);
+
+    // final unlock
+    pthread_mutex_unlock(&queue->mutex);
     
     // on success
     return NULL;
@@ -142,9 +166,16 @@ char* consumer_producer_get(consumer_producer_t* queue){
         return NULL; // Only return NULL on error, not empty queue
     }
 
+
+    // critical section ahead
+    pthread_mutex_lock(&queue->mutex);
     // Wait until queue is not empty (blocks until item available)
     while(queue->count == 0){
-        monitor_wait(&queue->not_empty_monitor);    
+        // unlock before wait
+        pthread_mutex_unlock(&queue->mutex);
+        monitor_wait(&queue->not_empty_monitor);   
+        // and lock back
+        pthread_mutex_lock(&queue->mutex); 
     }
 
     // remove an item from the head (where we extract next item)
@@ -157,6 +188,9 @@ char* consumer_producer_get(consumer_producer_t* queue){
 
     // Signal that queue is not full (producer might be waiting)
     monitor_signal(&queue->not_full_monitor);
+
+    // final unlock
+    pthread_mutex_unlock(&queue->mutex);
     
     // on success - return the item (never NULL for empty queue)
     return item;
@@ -178,7 +212,7 @@ void consumer_producer_signal_finished(consumer_producer_t* queue){
 /**
  * Wait for processing to be finished
  * @param queue Pointer to queue structure
- * @return 0 on success, -1 on timeout
+ * @return 0 on success, -1 on error
  */
 int consumer_producer_wait_finished(consumer_producer_t* queue){
     // error: queue is empty

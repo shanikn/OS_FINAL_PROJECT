@@ -1,5 +1,6 @@
 {
     "files.associations": {
         "plugin_sdk.h": "c"
-    }
+    },
+    "todo-tree.tree.scanMode": "current file"
 }
