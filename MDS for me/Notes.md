@@ -20,7 +20,7 @@
   - [ ] `plugin_place_work()` - add work to queue
   - [ ] `plugin_attach()` - set next plugin in chain
   - [ ] `plugin_fini()` - graceful shutdown
-  - [ ] `log_error()` and `log_info()` helper functions
+  - [x] `log_error()` and `log_info()` helper functions
 
 ### Plugin Infrastructure Status:
 - [x] plugin_common.h - header complete ✅

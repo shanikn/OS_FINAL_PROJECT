@@ -60,6 +60,10 @@ const char* consumer_producer_init(consumer_producer_t* queue, int capacity){
     // to prevent race conditions
     // clean up all monitors and memory if mutex init failed
     if(pthread_mutex_init(&queue->mutex, NULL) != 0){
+        monitor_destroy(&queue->not_full_monitor);
+        monitor_destroy(&queue->not_empty_monitor);
+        monitor_destroy(&queue->finished_monitor);
+        free(queue->items);
         return "failed initializing mutex";
     }
 
@@ -80,9 +84,10 @@ void consumer_producer_destroy(consumer_producer_t* queue){
 
     // free all items with error checks
     if(queue->items){
+        // TODO: check if using capacity instead of count is the solution for the issue with when the circular buffer has a next item pointer whenthe queue is full (out of bounds)
         // capacity and not count beacuse of the circular buffer
         for(int i=0; i<queue->capacity; i++){
-            // free the item in this index if there is one
+            // free the item in this index (if there is one)
             if(queue->items[i]){
                 free(queue->items[i]);
                 queue->items[i]= NULL;
