@@ -24,29 +24,30 @@ print_error() {
 
 print_status "Building unit tests..."
 
-# Create output directory if it doesn't exist
-mkdir -p output
-
 # Build monitor unit test
 print_status "Building monitor unit test"
-gcc -o ../../output/monitor_test monitor_test.c \
-    monitor.c \
-    -lpthread || {
+gcc monitor_test.c \
+    plugins/sync/monitor.c \
+    -lpthread -o monitor_test || {
     print_error "Failed to build monitor_test"
     exit 1
 }
 
 # Build consumer-producer unit test
 print_status "Building consumer-producer unit test"
-gcc -o ../../output/consumer_producer_test consumer_producer_test.c \
-    consumer_producer.c \
-    monitor.c \
-    -lpthread || {
+gcc consumer_producer_test.c \
+    plugins/sync/consumer_producer.c \
+    plugins/sync/monitor.c \
+    -lpthread -o consumer_producer_test || {
     print_error "Failed to build consumer_producer_test"
     exit 1
 }
 
 print_status "Unit tests built successfully!"
 print_status "Available unit tests:"
-print_status "  - output/monitor_test"
-print_status "  - output/consumer_producer_test"
+print_status "  - ./monitor_test"
+print_status "  - ./consumer_producer_test"
+print_status ""
+print_status "To run tests:"
+print_status "  ./monitor_test"
+print_status "  ./consumer_producer_test"

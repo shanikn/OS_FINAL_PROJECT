@@ -4,7 +4,16 @@
 #include <pthread.h>
 #include <unistd.h>
 
-#include "plugins/sync/consumer_producer.h"
+#include "plugins/sync/consumer_producer.h"  // Fix the include path
+
+// ADD THESE COLOR DEFINITIONS:
+#define COLOR_RED     "\033[0;31m"
+#define COLOR_GREEN   "\033[0;32m"
+#define COLOR_YELLOW  "\033[1;33m"
+#define COLOR_BLUE    "\033[0;34m"
+#define COLOR_PURPLE  "\033[0;35m"
+#define COLOR_CYAN    "\033[0;36m"
+#define COLOR_RESET   "\033[0m"
 
 // Test configuration
 #define TEST_QUEUE_SIZE 5
@@ -26,16 +35,16 @@ int tests_failed = 0;
 
 void print_test_result(const char* test_name, int passed) {
     if (passed) {
-        printf("[PASS] %s\n", test_name);
+        printf(COLOR_GREEN "[PASS]" COLOR_RESET " %s\n", test_name);
         tests_passed++;
     } else {
-        printf("[FAIL] %s\n", test_name);
+        printf(COLOR_RED "[FAIL]" COLOR_RESET " %s\n", test_name);
         tests_failed++;
     }
 }
 
 void print_test_header(const char* test_name) {
-    printf("\n=== Testing: %s ===\n", test_name);
+    printf("\n" COLOR_CYAN "=== Testing: %s ===" COLOR_RESET "\n", test_name);
 }
 
 // Test 1: Basic initialization and cleanup
@@ -438,16 +447,17 @@ int main() {
     print_test_result("Edge Cases", test_edge_cases());
     
     // Print summary
-    printf("\n=== Test Summary ===\n");
-    printf("Tests passed: %d\n", tests_passed);
-    printf("Tests failed: %d\n", tests_failed);
-    printf("Total tests: %d\n", tests_passed + tests_failed);
+    printf("\n" COLOR_BLUE "=== Test Summary ===" COLOR_RESET "\n");
+    printf(COLOR_GREEN "Tests passed: %d" COLOR_RESET "\n", tests_passed);
+    printf(COLOR_RED "Tests failed: %d" COLOR_RESET "\n", tests_failed);
+    printf(COLOR_YELLOW "Total tests: %d" COLOR_RESET "\n", tests_passed + tests_failed);
     
     if (tests_failed == 0) {
-        printf("\nAll tests passed! Your consumer-producer queue is working correctly.\n");
+        printf("\n" COLOR_GREEN "🎉 All tests passed! Your consumer-producer queue is working correctly." COLOR_RESET "\n");
         return 0;
     } else {
-        printf("\nSome tests failed. Please review your implementation.\n");
+        printf("\n" COLOR_RED "❌ Some tests failed. Please review your implementation." COLOR_RESET "\n");
         return 1;
     }
+    
 }
