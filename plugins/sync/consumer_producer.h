@@ -39,7 +39,6 @@ void consumer_producer_destroy(consumer_producer_t* queue);
 /**
  * Add an item to the queue (producer).
  * Blocks if queue is full.
- * @param queue Pointer to queue structure
  * @param item String to add (queue takes ownership)
  * @return NULL on success, error message on failure
  */
