@@ -7,6 +7,8 @@
 #include "plugin_common.h"
 
 // logger: Logs all strings that pass through to standard output. 
+// prints the string to STDOUT 
+
 
 /**
  * Get the plugin's name
@@ -18,9 +20,20 @@ const char* plugin_get_name(void){
 }
 
 
-// IMPLEMENT: plugin_transform unique for each plugin
 // transformation function
-const char* plugin_transform(const char* input);
+const char* plugin_transform(const char* input){
+    fprintf(stdout, "[logger] %s\n", input);
+    
+    // allocate memory for the copy of input (so we can later on free the original input from memory)
+    char* result= malloc(strlen(input)+1);
+    // error allocating memory: return NULL
+    if(result == NULL){
+        return NULL;
+    }
+    // copy
+    strcpy(result, input);
+    return result;
+}
 
 
 /**
@@ -34,7 +47,3 @@ const char* plugin_init(int queue_size){
     return common_plugin_init(plugin_transform, "logger", queue_size);
 }
 
-
-// TODO: Export the required plugin interface as described in the plugin_sdk.h section
-
-// TODO: figure out how to export, what does that even mean?

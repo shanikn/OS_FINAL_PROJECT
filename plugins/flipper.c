@@ -18,9 +18,35 @@ const char* plugin_get_name(void){
 }
 
 
-// IMPLEMENT: plugin_transform unique for each plugin
 // transformation function
-const char* plugin_transform(const char* input);
+const char* plugin_transform(const char* input){    
+    // allocate memory for the copy of input (so we can later on free the original input from memory)
+    int len= strlen(input);
+    int start=0;
+    int end= len-1;
+    char tmp;
+            
+    char* result= malloc(len+1);
+    // error allocating memory: return NULL
+    if(result == NULL){
+        return NULL;
+    }
+
+    // copy
+    strcpy(result, input);
+
+    // reverse the copy
+    while(start<end){
+        tmp= result[start];
+        result[start]=result[end];
+        result[end]=tmp;
+
+        start++;
+        end--;
+    }
+           
+    return result;
+}
 
 
 /**
@@ -33,6 +59,3 @@ __attribute__((visibility("default")))
 const char* plugin_init(int queue_size){
     return common_plugin_init(plugin_transform, "flipper", queue_size);
 }
-
-
-// TODO: Export the required plugin interface as described in the plugin_sdk.h section

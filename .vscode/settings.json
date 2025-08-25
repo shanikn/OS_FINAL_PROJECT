@@ -1,6 +1,7 @@
 {
     "files.associations": {
-        "plugin_sdk.h": "c"
+        "plugin_sdk.h": "c",
+        "plugin_common.h": "c"
     },
     "todo-tree.tree.scanMode": "workspace"
 }
