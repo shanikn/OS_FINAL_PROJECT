@@ -96,6 +96,19 @@ void log_info(plugin_context_t* context, const char* message){
  * @return NULL on success, error message on failure
  */
 const char* common_plugin_init(const char* (*process_function)(const char*), const char* name, int queue_size){
+    // input validation checks
+    if(process_function == NULL){
+        return "Process function can't be NULL";
+    }
+    
+    if(name == NULL){
+        return "Plugin name can't be NULL";
+    }
+
+    if(queue_size<=0){
+        return "Queue size must be positive";
+    }
+    
     pthread_mutex_lock(&init_mutex);
 
     // if already initialized (error)
@@ -119,8 +132,18 @@ const char* common_plugin_init(const char* (*process_function)(const char*), con
     g_plugin_context->finished = 0;
 
     // allocate and initialize the queue
-    g_plugin_context->queue = consumer_producer_new(queue_size);
+    g_plugin_context->queue = malloc(sizeof(consumer_producer_t));
+    // error allocating memory
     if(g_plugin_context->queue == NULL){
+        free(g_plugin_context);
+        g_plugin_context = NULL;
+        pthread_mutex_unlock(&init_mutex);
+        return "Failed to allocate memory for consumer-producer queue";
+    }
+
+    // initiallize the queue
+    if(consumer_producer_init(g_plugin_context->queue, queue_size)){
+        free(g_plugin_context->queue);
         free(g_plugin_context);
         g_plugin_context = NULL;
         pthread_mutex_unlock(&init_mutex);
@@ -130,7 +153,8 @@ const char* common_plugin_init(const char* (*process_function)(const char*), con
     // start the consumer thread with pthread_create()
     int pthread_result = pthread_create(&g_plugin_context->consumer_thread, NULL, plugin_consumer_thread, g_plugin_context);
     if(pthread_result != 0){
-        consumer_producer_free(g_plugin_context->queue);
+        consumer_producer_destroy(g_plugin_context->queue);
+        free(g_plugin_context->queue);
         free(g_plugin_context);
         g_plugin_context = NULL;
         pthread_mutex_unlock(&init_mutex);
@@ -177,7 +201,8 @@ const char* plugin_fini(void){
     }
 
     // clean up resources
-    consumer_producer_free(g_plugin_context->queue);
+    consumer_producer_destroy(g_plugin_context->queue);
+    free(g_plugin_context->queue);
     free(g_plugin_context);
     g_plugin_context= NULL;
 

@@ -2,12 +2,14 @@
 #include <stdlib.h>
 #include <string.h>
 #include <pthread.h>
+#include <unistd.h> // for usleep
 
 #include "plugin_sdk.h"
 #include "plugin_common.h"
 
 // typewriter: Simulates a typewriter effect by printing each character with a 100ms delay (you can use the usleep function). 
 // Notice, this can cause a “traffic jam”. 
+//TODO: make sure there isn't a traffic jam, the implementation is ok
 
 
 /**
@@ -20,34 +22,32 @@ const char* plugin_get_name(void){
 }
 
 
-// IMPLEMENT: plugin_transform unique for each plugin
 // transformation function
 const char* plugin_transform(const char* input){
-    // allocate memory for the copy of input (so we can later on free the original input from memory)
     int len= strlen(input);
-    int start=0;
-    int end= len-1;
-    char tmp;
-            
+
+    // allocate memory for the copy of input (so we can later on free the original input from memory)
     char* result= malloc(len+1);
     // error allocating memory: return NULL
     if(result == NULL){
         return NULL;
     }
-
-    // copy
+    
+    // copy 
     strcpy(result, input);
+    
+    // printing the plugin name before the loop
+    fprintf(stdout, "[typewriter] ");
 
-    // reverse the copy
-    while(start<end){
-        tmp= result[start];
-        result[start]=result[end];
-        result[end]=tmp;
 
-        start++;
-        end--;
+    // printing each character with a 100ms delay
+    for(int i=0; i<len; i++){
+        fprintf(stdout,"%c", result[i]);
+        usleep(100000); //100 ms
     }
-           
+
+    // don't forget to enter a line at the end
+    fprintf(stdout,"\n");
     return result;
 }
 

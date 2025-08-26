@@ -3,6 +3,10 @@
 #include <string.h>
 #include <pthread.h>
 
+// <ctype.h> is a standard library in C
+#include <ctype.h> // for uppercase
+
+
 #include "plugin_sdk.h"
 #include "plugin_common.h"
 
@@ -14,19 +18,17 @@
  */
 __attribute__((visibility("default")))
 const char* plugin_get_name(void){
-    return "uppercase";
+    return "uppercaser";
 }
 
 
-// IMPLEMENT: plugin_transform unique for each plugin
 // transformation function
 const char* plugin_transform(const char* input){
+
+
     // allocate memory for the copy of input (so we can later on free the original input from memory)
     int len= strlen(input);
-    int start=0;
-    int end= len-1;
-    char tmp;
-            
+
     char* result= malloc(len+1);
     // error allocating memory: return NULL
     if(result == NULL){
@@ -35,17 +37,12 @@ const char* plugin_transform(const char* input){
 
     // copy
     strcpy(result, input);
-
-    // reverse the copy
-    while(start<end){
-        tmp= result[start];
-        result[start]=result[end];
-        result[end]=tmp;
-
-        start++;
-        end--;
+    
+    // uppercase each char
+    for(int i=0; i<len; i++){
+        result[i]=toupper(result[i]);
     }
-           
+    
     return result;
 }
 
@@ -58,5 +55,5 @@ const char* plugin_transform(const char* input){
  */
 __attribute__((visibility("default")))
 const char* plugin_init(int queue_size){
-    return common_plugin_init(plugin_transform, "uppercase", queue_size);
+    return common_plugin_init(plugin_transform, "uppercaser", queue_size);
 }

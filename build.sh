@@ -23,14 +23,6 @@ print_error(){
 # Create output directory
 mkdir -p output
 
-# plugin build template!!! (page 19 in instructions pdf)
-gcc -fPIC -shared -o output/${plugin_name}.so \
- plugins/${plugin_name}.c \
- plugins/plugin_common.c \
- plugins/sync/monitor.c \
- plugins/sync/consumer_producer.c \
- -ldl -lpthread
-
 
 # we use a loop to activate the template for each plugin
 for plugin_name in logger uppercaser rotator flipper expander typewriter; do

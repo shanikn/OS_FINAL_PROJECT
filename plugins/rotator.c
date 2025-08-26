@@ -36,7 +36,7 @@ const char* plugin_transform(const char* input){
     result[0]=input[len-1];
 
     // copies every char from the input 1 index after the original
-    for(int i=1; i<len; i++){
+    for(int i=0; i<len-1; i++){
         result[i+1]=input[i];
     }
 
