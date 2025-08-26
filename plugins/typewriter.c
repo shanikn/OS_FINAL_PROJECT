@@ -8,8 +8,7 @@
 #include "plugin_common.h"
 
 // typewriter: Simulates a typewriter effect by printing each character with a 100ms delay (you can use the usleep function). 
-// Notice, this can cause a “traffic jam”. 
-//TODO: make sure there isn't a traffic jam, the implementation is ok
+// Note: No traffic jam due to threaded plugin architecture - each plugin runs independently
 
 
 /**

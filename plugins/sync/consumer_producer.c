@@ -84,7 +84,6 @@ void consumer_producer_destroy(consumer_producer_t* queue){
 
     // free all items with error checks
     if(queue->items){
-        // TODO: check if using capacity instead of count is the solution for the issue with when the circular buffer has a next item pointer whenthe queue is full (out of bounds)
         // capacity and not count beacuse of the circular buffer
         for(int i=0; i<queue->capacity; i++){
             // free the item in this index (if there is one)
