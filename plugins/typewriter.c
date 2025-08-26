@@ -1,17 +1,64 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <pthread.h>
+#include <unistd.h> // for usleep
 
 #include "plugin_sdk.h"
+#include "plugin_common.h"
 
-const char* plugin_get_name(void);
+// typewriter: Simulates a typewriter effect by printing each character with a 100ms delay (you can use the usleep function). 
+// Notice, this can cause a “traffic jam”. 
+//TODO: make sure there isn't a traffic jam, the implementation is ok
 
-const char* plugin_init(int queue_size);
 
-const char* plugin_fini(void);
+/**
+ * Get the plugin's name
+ * @return The plugin's name (should not be modified or freed)
+ */
+__attribute__((visibility("default")))
+const char* plugin_get_name(void){
+    return "typewriter";
+}
 
-const char* plugin_place_work(const char* str);
 
-void plugin_attach(const char* (*next_place_work)(const char*));
+// transformation function
+const char* plugin_transform(const char* input){
+    int len= strlen(input);
 
-const char* plugin_wait_finished(void);
+    // allocate memory for the copy of input (so we can later on free the original input from memory)
+    char* result= malloc(len+1);
+    // error allocating memory: return NULL
+    if(result == NULL){
+        return NULL;
+    }
+    
+    // copy 
+    strcpy(result, input);
+    
+    // printing the plugin name before the loop
+    fprintf(stdout, "[typewriter] ");
+
+
+    // printing each character with a 100ms delay
+    for(int i=0; i<len; i++){
+        fprintf(stdout,"%c", result[i]);
+        usleep(100000); //100 ms
+    }
+
+    // don't forget to enter a line at the end
+    fprintf(stdout,"\n");
+    return result;
+}
+
+
+/**
+ * Initialize the plugin with the specified queue size - calls common_plugin_init
+ * This function should be implemented by each plugin
+ * @param queue_size Maximum number of items that can be queued
+ * @return NULL on success, error message on failure
+ */
+__attribute__((visibility("default")))
+const char* plugin_init(int queue_size){
+    return common_plugin_init(plugin_transform, "typewriter", queue_size);
+}

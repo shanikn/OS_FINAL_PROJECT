@@ -4,14 +4,21 @@
  * lot of headaches and frustrations later on in case of a bug. 
  */
 
-#include <pthread.h>   
-#include <stdio.h>     
-#include <stdlib.h>    
-#include <unistd.h>
+#include <pthread.h>   // Allowed: pthread library
+#include <stdio.h>     // Standard I/O (printf, etc.)
+#include <stdlib.h>    // Standard library (malloc, free, etc.)
+#include <unistd.h>    // UNIX standard (usleep)
 
-#include "monitor.h"
+#include "plugins/sync/monitor.h"
 
-// Simple output without colors
+// AFTER THE INCLUDES:
+#define COLOR_RED     "\033[0;31m"
+#define COLOR_GREEN   "\033[0;32m"
+#define COLOR_YELLOW  "\033[1;33m"
+#define COLOR_BLUE    "\033[0;34m"
+#define COLOR_PURPLE  "\033[0;35m"
+#define COLOR_CYAN    "\033[0;36m"
+#define COLOR_RESET   "\033[0m"
 
 // Test result tracking
 static int tests_passed = 0;
@@ -20,20 +27,20 @@ static int tests_failed = 0;
 // Function to print test results
 void print_test_result(const char* test_name, int passed) {
     if (passed) {
-        printf("[TEST PASS] %s\n", test_name);
+        printf(COLOR_GREEN "[TEST PASS]" COLOR_RESET " %s\n", test_name);
         tests_passed++;
     } else {
-        printf("[TEST FAIL] %s\n", test_name);
+        printf(COLOR_RED "[TEST FAIL]" COLOR_RESET " %s\n", test_name);
         tests_failed++;
     }
 }
 
 void print_test_summary() {
-    printf("\n========== TEST SUMMARY ==========\n");
-    printf("Tests passed: %d\n", tests_passed);
-    printf("Tests failed: %d\n", tests_failed);
-    printf("Total tests:  %d\n", tests_passed + tests_failed);
-    printf("=================================\n");
+    printf("\n" COLOR_BLUE "========== TEST SUMMARY ==========" COLOR_RESET "\n");
+    printf(COLOR_GREEN "Tests passed: %d" COLOR_RESET "\n", tests_passed);
+    printf(COLOR_RED "Tests failed: %d" COLOR_RESET "\n", tests_failed);
+    printf(COLOR_YELLOW "Total tests:  %d" COLOR_RESET "\n", tests_passed + tests_failed);
+    printf(COLOR_BLUE "==================================" COLOR_RESET "\n");
 }
 
 // Test 1: Basic initialization and destruction
@@ -318,7 +325,7 @@ void test_performance() {
 }
 
 int main() {
-    printf("========== MONITOR UNIT TESTS ==========\n\n");
+    printf(COLOR_PURPLE "========== MONITOR UNIT TESTS ==========" COLOR_RESET "\n\n");
     
     // Run all tests
     test_basic_init_destroy();
@@ -336,10 +343,11 @@ int main() {
     
     // Exit with appropriate code
     if (tests_failed > 0) {
-        printf("\nSome tests failed! Please fix the issues.\n");
+        printf("\n" COLOR_RED "❌ Some tests failed! Please fix the issues." COLOR_RESET "\n");
         return 1;
     } else {
-        printf("\nAll tests passed! Monitor implementation is correct.\n");
+        printf("\n" COLOR_GREEN "🎉 All tests passed! Monitor implementation is correct." COLOR_RESET "\n");
         return 0;
     }
+    
 }

@@ -1,17 +1,58 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <pthread.h>
 
 #include "plugin_sdk.h"
+#include "plugin_common.h"
 
-const char* plugin_get_name(void);
+// rotator: Moves every character in the string one position to the right. 
+// The last character wraps around to the front. 
 
-const char* plugin_init(int queue_size);
 
-const char* plugin_fini(void);
+/**
+ * Get the plugin's name
+ * @return The plugin's name (should not be modified or freed)
+ */
+__attribute__((visibility("default")))
+const char* plugin_get_name(void){
+    return "rotator";
+}
 
-const char* plugin_place_work(const char* str);
 
-void plugin_attach(const char* (*next_place_work)(const char*));
+// transformation function
+const char* plugin_transform(const char* input){
+    int len= strlen(input);
+    
+    // allocate the memory for the copy of input (so we can later on free the original input from memory)
+    char* result= malloc(len+1);
+    // error allocating memory: return NULL
+    if(result == NULL){
+        return NULL;
+    }
 
-const char* plugin_wait_finished(void);
+
+    // puts the last char at front
+    result[0]=input[len-1];
+
+    // copies every char from the input 1 index after the original
+    for(int i=0; i<len-1; i++){
+        result[i+1]=input[i];
+    }
+
+    // add the null terminator
+    result[len]='\0';
+    return result;
+}
+
+
+/**
+ * Initialize the plugin with the specified queue size - calls common_plugin_init
+ * This function should be implemented by each plugin
+ * @param queue_size Maximum number of items that can be queued
+ * @return NULL on success, error message on failure
+ */
+__attribute__((visibility("default")))
+const char* plugin_init(int queue_size){
+    return common_plugin_init(plugin_transform, "rotator", queue_size);
+}
