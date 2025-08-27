@@ -1,0 +1,297 @@
+File: test_uppercaser.c
+--------------------------------------------------------------------------------
+#include <check.h>
+#include <string.h>
+#include "plugins/plugin_common.h"
+
+/* pull in the implementation so we reach the static helper */
+#include "plugins/uppercaser.c"
+
+START_TEST(to_upper_handles_utf8)
+        {
+                char s[] = "Ångström\n";
+                uppercase(s);                     /* static from uppercaser.c */
+                ck_assert_str_eq(s, "ÅNGSTRÖM\n");
+        }
+END_TEST
+
+        Suite* upper_suite(void)
+{
+    Suite *s  = suite_create("uppercaser");
+    TCase *tc = tcase_create("core");
+    tcase_add_test(tc, to_upper_handles_utf8);
+    suite_add_tcase(s, tc);
+    return s;
+}
+
+int main(void)
+{
+    SRunner *sr = srunner_create(upper_suite());
+    srunner_run_all(sr, CK_ENV);
+    int nf = srunner_ntests_failed(sr);
+    srunner_free(sr);
+    return nf ? 1 : 0;
+}
+
+--------------------------------------------------------------------------------
+
+File: test_rotator.c
+--------------------------------------------------------------------------------
+#include <check.h>
+#include <string.h>
+#include "plugins/plugin_common.h"
+
+/* pull in the implementation so we reach the static helper */
+#include "plugins/rotator.c"
+
+START_TEST(rotator_single_char_noop)
+{
+    char s[] = "X";
+    rot(s);
+    ck_assert_str_eq(s, "X");
+}
+END_TEST
+
+        Suite* rotator_suite(void)
+{
+    Suite *s  = suite_create("rotator");
+    TCase *tc = tcase_create("core");
+    tcase_add_test(tc, rotator_single_char_noop);
+    suite_add_tcase(s, tc);
+    return s;
+}
+
+int main(void)
+{
+    SRunner *sr = srunner_create(rotator_suite());
+    srunner_run_all(sr, CK_ENV);
+    int nf = srunner_ntests_failed(sr);
+    srunner_free(sr);
+    return nf ? 1 : 0;
+}
+--------------------------------------------------------------------------------
+
+File: test_pipeline_integration.c
+--------------------------------------------------------------------------------
+/* ------------------------------------------------------------------ *
+ *  End-to-end: run analyzer in a child process                       *
+ * ------------------------------------------------------------------ */
+#include <check.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+START_TEST(e2e_upper_logger)
+        {
+                FILE *fp = popen("./output/analyzer 8 uppercaser logger", "w");
+        ck_assert_ptr_nonnull(fp);
+
+        fputs("hello\n", fp);
+        pclose(fp);                      /* closes stdin, analyzer drains */
+
+        /* collect analyzer output */
+        FILE *out = popen("cat analyzer.log 2>/dev/null", "r"); /* assuming logger writes there */
+        if (!out) { ck_abort_msg("missing log output"); }
+
+        char buf[64]; fgets(buf, sizeof buf, out);
+        pclose(out);
+
+        ck_assert_msg(strstr(buf, "HELLO"), "expected transformed text");
+        }
+END_TEST
+
+        Suite *pipeline_suite(void)
+{
+    Suite *s = suite_create("pipeline");
+    TCase *tc = tcase_create("core");
+    tcase_add_test(tc, e2e_upper_logger);
+    suite_add_tcase(s, tc);
+    return s;
+}
+
+--------------------------------------------------------------------------------
+
+File: test_monitor.c
+--------------------------------------------------------------------------------
+/* ------------------------------------------------------------------ *
+ *  Monitor – remembers signals                                       *
+ * ------------------------------------------------------------------ */
+#include <check.h>
+#include <pthread.h>
+#include "plugins/sync/monitor.h"
+
+START_TEST(signal_before_wait_is_caught)
+{
+    monitor_t m; ck_assert_int_eq(monitor_init(&m), 0);
+
+    /* signal first … */
+    monitor_signal(&m);
+    /* … then wait: must return immediately */
+    ck_assert_int_eq(monitor_wait(&m), 0);
+
+    monitor_destroy(&m);
+}
+END_TEST
+
+
+static void *waiter(void *arg)           /* helper for concurrent test */
+{
+    monitor_t *m = arg;
+    ck_assert_int_eq(monitor_wait(m), 0);
+    return NULL;
+}
+
+START_TEST(two_waiters_get_broadcast)
+{
+    monitor_t m; ck_assert_int_eq(monitor_init(&m), 0);
+    pthread_t t1, t2;
+
+    pthread_create(&t1, NULL, waiter, &m);
+    pthread_create(&t2, NULL, waiter, &m);
+
+    /* give threads a moment to block */
+    sched_yield();
+    monitor_signal(&m);                  /* broadcast */
+
+    pthread_join(t1, NULL);
+    pthread_join(t2, NULL);
+    monitor_destroy(&m);
+}
+END_TEST
+
+
+Suite *monitor_suite(void)
+{
+    Suite *s = suite_create("monitor");
+    TCase *tc = tcase_create("core");
+    tcase_add_test(tc, signal_before_wait_is_caught);
+    tcase_add_test(tc, two_waiters_get_broadcast);
+    suite_add_tcase(s, tc);
+    return s;
+}
+
+--------------------------------------------------------------------------------
+
+File: test_flipper.c
+--------------------------------------------------------------------------------
+#include <check.h>
+#include <string.h>
+#include "plugins/plugin_common.h"
+
+/* pull in the implementation so we reach the static helper */
+#include "plugins/rotator.c"
+
+START_TEST(flipper_even_and_odd)
+{
+    char a[] = "ABCD";
+    char b[] = "ABCDE";
+    flip(a); flip(b);
+    ck_assert_str_eq(a, "DCBA");
+    ck_assert_str_eq(b, "EDCBA");
+}
+END_TEST
+
+        Suite* flipper_suite(void)
+{
+    Suite *s  = suite_create("flipper");
+    TCase *tc = tcase_create("core");
+    tcase_add_test(tc, flipper_even_and_odd);
+    suite_add_tcase(s, tc);
+    return s;
+}
+
+int main(void)
+{
+    SRunner *sr = srunner_create(flipper_suite());
+    srunner_run_all(sr, CK_ENV);
+    int nf = srunner_ntests_failed(sr);
+    srunner_free(sr);
+    return nf ? 1 : 0;
+}
+
+--------------------------------------------------------------------------------
+
+File: test_consumer_producer.c
+--------------------------------------------------------------------------------
+/* ------------------------------------------------------------------ *
+ *  consumer_producer – single-thread and multi-thread edge cases     *
+ * ------------------------------------------------------------------ */
+#include <check.h>
+#include <pthread.h>
+#include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include "plugins/sync/consumer_producer.h"
+
+/* ---------- single-thread sanity ---------------------------------- */
+START_TEST(capacity_one_put_get)
+{
+    consumer_producer_t q;
+    ck_assert_ptr_eq(consumer_producer_init(&q, 1), NULL);
+
+    ck_assert_ptr_eq(consumer_producer_put(&q, "A"), NULL);
+    ck_assert_str_eq(consumer_producer_get(&q), "A");
+
+    consumer_producer_destroy(&q);
+}
+END_TEST
+
+/* ---------- concurrency: 2 producers, 2 consumers ----------------- */
+#define RUNS 1000
+static void *producer(void *arg)
+{
+    consumer_producer_t *q = arg;
+    char buf[16];
+
+    for (int i = 0; i < RUNS; ++i) {
+        snprintf(buf, sizeof buf, "%d", i);
+        consumer_producer_put(q, buf);
+    }
+    return NULL;
+}
+
+static void *consumer(void *arg)
+{
+    consumer_producer_t *q = arg;
+    int got = 0;
+
+    while (got < RUNS) {
+        char *s = consumer_producer_get(q);
+        if (s) {
+            ++got;
+            free(s);
+        }
+    }
+    return NULL;
+}
+
+START_TEST(two_by_two_threads)
+{
+    consumer_producer_t q;
+    ck_assert_ptr_eq(consumer_producer_init(&q, 64), NULL);
+
+    pthread_t p1, p2, c1, c2;
+    pthread_create(&p1, NULL, producer, &q);
+    pthread_create(&p2, NULL, producer, &q);
+    pthread_create(&c1, NULL, consumer, &q);
+    pthread_create(&c2, NULL, consumer, &q);
+
+    pthread_join(p1, NULL); pthread_join(p2, NULL);
+    consumer_producer_signal_finished(&q);   /* let consumers exit */
+    pthread_join(c1, NULL); pthread_join(c2, NULL);
+
+    consumer_producer_destroy(&q);
+}
+END_TEST
+
+Suite *queue_suite(void)
+{
+    Suite *s = suite_create("queue");
+    TCase *tc = tcase_create("core");
+    tcase_add_test(tc, capacity_one_put_get);
+    tcase_add_test(tc, two_by_two_threads);
+    suite_add_tcase(s, tc);
+    return s;
+}
+
+--------------------------------------------------------------------------------
+

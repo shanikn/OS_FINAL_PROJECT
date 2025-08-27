@@ -45,4 +45,17 @@ Desktop.ini
 *.bak
 *.backup
 
+# Temporary/local files that shouldn't be in repo
+CLAUDE.local.md
 lesson.md
+
+# Claude Code agent files
+.claude/
+
+# Personal documentation folder (optional - keep local)
+MDS\ for\ me/
+
+# Test executables built in root
+monitor_test
+consumer_producer_test
+plugin_common_test

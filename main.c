@@ -7,39 +7,81 @@
 
 #include "plugins/plugin_sdk.h"
 
+// Helper function to check if a plugin name is valid (one of the 6 allowed)
+int is_valid_plugin(const char* name) {
+    const char* valid_plugins[] = {"logger", "typewriter", "uppercaser", "rotator", "flipper", "expander"};
+    for(int i = 0; i < 6; i++) {
+        if(strcmp(name, valid_plugins[i]) == 0) {
+            return 1;
+        }
+    }
+    return 0;
+}
 
-// Plugin structure to hold loaded plugin information
+// Function pointer typedefs as specified in PDF
+typedef const char* (*plugin_init_func_t)(int);
+typedef const char* (*plugin_fini_func_t)(void);
+typedef const char* (*plugin_place_work_func_t)(const char*);
+typedef void (*plugin_attach_func_t)(const char* (*)(const char*));
+typedef const char* (*plugin_wait_finished_func_t)(void);
+
+// Plugin structure exactly as specified in PDF page 8
 typedef struct {
-    void* handle;                                    // dlopen handle
-    const char* (*init)(int);                      // plugin_init function
-    const char* (*place_work)(const char*);       // plugin_place_work function  
-    void (*attach)(const char* (*)(const char*)); // plugin_attach function
-    const char* (*wait_finished)(void);           // plugin_wait_finished function
-    const char* (*fini)(void);                    // plugin_fini function
-    const char* (*get_name)(void);                // plugin_get_name function
-} plugin_t;
+    plugin_init_func_t init;
+    plugin_fini_func_t fini;
+    plugin_place_work_func_t place_work;
+    plugin_attach_func_t attach;
+    plugin_wait_finished_func_t wait_finished;
+    char* name;
+    void* handle;
+} plugin_handle_t;
+
+void print_usage() {
+    printf("Usage: ./analyzer <queue_size> <plugin1> <plugin2> ... <pluginN>\n");
+    printf("Arguments:\n");
+    printf(" queue_size Maximum number of items in each plugin's queue\n");
+    printf(" plugin1..N Names of plugins to load (without .so extension)\n");
+    printf("Available plugins:\n");
+    printf(" logger - Logs all strings that pass through\n");
+    printf(" typewriter - Simulates typewriter effect with delays\n");
+    printf(" uppercaser - Converts strings to uppercase\n");
+    printf(" rotator - Move every character to the right. Last character moves to the beginning.\n");
+    printf(" flipper - Reverses the order of characters\n");
+    printf(" expander - Expands each character with spaces\n");
+    printf("Example:\n");
+    printf(" ./analyzer 20 uppercaser rotator logger\n");
+    printf(" echo 'hello' | ./analyzer 20 uppercaser rotator logger\n");
+    printf(" echo '<END>' | ./analyzer 20 uppercaser rotator logger\n");
+}
 
 int main(int argc, char *argv[]){
-    // Step 1: Parse command-line arguments
-    if(argc < 2){
-        fprintf(stderr, "Usage: %s <queue_size> [plugin1] [plugin2] ...\n", argv[0]);
+    // Step 1: Parse and validate command-line arguments
+    if(argc < 3) {
+        fprintf(stderr, "Missing arguments\n");
+        print_usage();
         return 1;
     }
     
     int queue_size = atoi(argv[1]);
-    if(queue_size <= 0){
-        fprintf(stderr, "Queue size must be positive\n");
+    if(queue_size <= 0) {
+        fprintf(stderr, "Invalid queue size: %s\n", argv[1]);
+        print_usage();
         return 1;
+    }
+    
+    // Check all plugins are valid
+    for(int i = 2; i < argc; i++) {
+        if(!is_valid_plugin(argv[i])) {
+            fprintf(stderr, "Unknown plugin: %s\n", argv[i]);
+            print_usage();
+            return 1;
+        }
     }
     
     int num_plugins = argc - 2;
-    if(num_plugins == 0){
-        fprintf(stderr, "At least one plugin must be specified\n");
-        return 1;
-    }
     
     // Step 2: Load plugin shared objects
-    plugin_t* plugins = malloc(num_plugins * sizeof(plugin_t));
+    plugin_handle_t* plugins = malloc(num_plugins * sizeof(plugin_handle_t));
     if(!plugins){
         fprintf(stderr, "Failed to allocate memory for plugins\n");
         return 1;
@@ -62,14 +104,28 @@ int main(int argc, char *argv[]){
         
         // Load plugin functions
         plugins[i].init = dlsym(plugins[i].handle, "plugin_init");
+        plugins[i].fini = dlsym(plugins[i].handle, "plugin_fini");
         plugins[i].place_work = dlsym(plugins[i].handle, "plugin_place_work");
         plugins[i].attach = dlsym(plugins[i].handle, "plugin_attach");
         plugins[i].wait_finished = dlsym(plugins[i].handle, "plugin_wait_finished");
-        plugins[i].fini = dlsym(plugins[i].handle, "plugin_fini");
-        plugins[i].get_name = dlsym(plugins[i].handle, "plugin_get_name");
+        
+        // Get plugin name and store it
+        const char* (*get_name)(void) = dlsym(plugins[i].handle, "plugin_get_name");
+        if(get_name) {
+            const char* plugin_name = get_name();
+            plugins[i].name = malloc(strlen(plugin_name) + 1);
+            if(plugins[i].name) {
+                strcpy(plugins[i].name, plugin_name);
+            }
+        } else {
+            plugins[i].name = malloc(strlen(argv[i + 2]) + 1);
+            if(plugins[i].name) {
+                strcpy(plugins[i].name, argv[i + 2]);
+            }
+        }
         
         if(!plugins[i].init || !plugins[i].place_work || !plugins[i].attach || 
-           !plugins[i].wait_finished || !plugins[i].fini || !plugins[i].get_name){
+           !plugins[i].wait_finished || !plugins[i].fini){
             fprintf(stderr, "Plugin %s missing required functions\n", argv[i + 2]);
             // Cleanup
             for(int j = 0; j <= i; j++){
@@ -136,7 +192,10 @@ int main(int argc, char *argv[]){
     for(int i = 0; i < num_plugins; i++){
         const char* error = plugins[i].fini();
         if(error){
-            fprintf(stderr, "Plugin %s cleanup failed: %s\n", argv[i + 2], error);
+            fprintf(stderr, "Plugin %s cleanup failed: %s\n", plugins[i].name ? plugins[i].name : argv[i + 2], error);
+        }
+        if(plugins[i].name) {
+            free(plugins[i].name);
         }
         dlclose(plugins[i].handle);
     }

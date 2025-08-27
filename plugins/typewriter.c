@@ -35,9 +35,12 @@ const char* plugin_transform(const char* input){
     // copy 
     strcpy(result, input);
     
-    // printing the plugin name before the loop
-    fprintf(stdout, "[typewriter] ");
-
+    // printing the plugin name with 100ms delay too (before looping over the input)
+    const char* prefix = "[typewriter] ";
+    for(int i=0; i<strlen(prefix); i++){
+        fprintf(stdout,"%c", prefix[i]);
+        usleep(100000); //100 ms
+    }
 
     // printing each character with a 100ms delay
     for(int i=0; i<len; i++){
