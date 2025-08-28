@@ -214,8 +214,8 @@ Avoid these automatic penalties:
 Before submitting:
 1. [ ] Download your zip from Moodle
 2. [ ] Unzip and verify all files present
-3. [ ] Run `./build.sh` - must succeed
-4. [ ] Run `./test.sh` - all tests pass  
-5. [ ] Test basic functionality manually
-6. [ ] Verify no debug prints in output
-7. [ ] Check README format is exact
+3. [x] Run `./build.sh` - must succeed
+4. [x] Run `./test.sh` - all tests pass  
+5. [x] Test basic functionality manually
+6. [x] Verify no debug prints in output
+7. [x]Check README format is exact

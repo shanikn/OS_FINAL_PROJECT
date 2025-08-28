@@ -31,17 +31,12 @@ const char* plugin_transform(const char* input){
         return NULL;
     }
 
-
-    // puts the last char at front
-    result[0]=input[len-1];
-
-    // copies every char from the input 1 index after the original
-    for(int i=0; i<len-1; i++){
-        result[i+1]=input[i];
+    // Always rotate: move last char to front, shift others right
+    result[0] = input[len - 1];
+    for (int i = 0; i < len - 1; i++) {
+        result[i + 1] = input[i];
     }
-
-    // add the null terminator
-    result[len]='\0';
+    result[len] = '\0';
     return result;
 }
 

@@ -57,10 +57,12 @@ void *plugin_consumer_thread(void *arg){
 
         // forward the result to next plugin in the chain (if there is one)
         if(context->next_place_work){
+            // Pass ownership to next plugin; do NOT free here
             context->next_place_work(result);
         }
         else{
-            // if this is the last plugin in chain, we need to free the result
+            // Last plugin: process and free result
+            // For logger/typewriter, output happens in plugin_transform, so just free
             free((void *)result);
         }
     }

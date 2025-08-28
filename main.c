@@ -36,40 +36,71 @@ typedef struct {
     void* handle;
 } plugin_handle_t;
 
-void print_usage() {
-    printf("Usage: ./analyzer <queue_size> <plugin1> <plugin2> ... <pluginN>\n");
-    printf("Arguments:\n");
-    printf(" queue_size Maximum number of items in each plugin's queue\n");
-    printf(" plugin1..N Names of plugins to load (without .so extension)\n");
-    printf("Available plugins:\n");
-    printf(" logger - Logs all strings that pass through\n");
-    printf(" typewriter - Simulates typewriter effect with delays\n");
-    printf(" uppercaser - Converts strings to uppercase\n");
-    printf(" rotator - Move every character to the right. Last character moves to the beginning.\n");
-    printf(" flipper - Reverses the order of characters\n");
-    printf(" expander - Expands each character with spaces\n");
-    printf("Example:\n");
-    printf(" ./analyzer 20 uppercaser rotator logger\n");
-    printf(" echo 'hello' | ./analyzer 20 uppercaser rotator logger\n");
-    printf(" echo '<END>' | ./analyzer 20 uppercaser rotator logger\n");
+
+
+// help message as a string variable
+const char* help_message =
+"Usage: ./analyzer <queue_size> <plugin1> <plugin2> ... <pluginN>\n\n"
+"Arguments:\n"
+" queue_size\t Maximum number of items in each plugin's queue\n"
+" plugin1..N\t Names of plugins to load (without .so extension)\n\n"
+"Available plugins:\n"
+" logger\t\t - Logs all strings that pass through\n"
+" typewriter\t - Simulates typewriter effect with delays\n"
+" uppercaser\t - Converts strings to uppercase\n"
+" rotator\t - Move every character to the right. Last character moves to the beginning.\n"
+" flipper\t - Reverses the order of characters\n"
+" expander\t - Expands each character with spaces\n\n"
+"Example:\n"
+" ./analyzer 20 uppercaser rotator logger\n"
+" echo 'hello' | ./analyzer 20 uppercaser rotator logger\n"
+" echo '<END>' | ./analyzer 20 uppercaser rotator logger\n";
+
+
+// helper function: usage print to stdout
+void print_usage(){
+    fprintf(stdout, "%s\n", help_message);
 }
+
+
+
+// void print_usage() {
+//     printf("Usage: ./analyzer <queue_size> <plugin1> <plugin2> ... <pluginN>\n");
+//     printf("Arguments:\n");
+//     printf(" queue_size Maximum number of items in each plugin's queue\n");
+//     printf(" plugin1..N Names of plugins to load (without .so extension)\n");
+//     printf("Available plugins:\n");
+//     printf(" logger - Logs all strings that pass through\n");
+//     printf(" typewriter - Simulates typewriter effect with delays\n");
+//     printf(" uppercaser - Converts strings to uppercase\n");
+//     printf(" rotator - Move every character to the right. Last character moves to the beginning.\n");
+//     printf(" flipper - Reverses the order of characters\n");
+//     printf(" expander - Expands each character with spaces\n");
+//     printf("Example:\n");
+//     printf(" ./analyzer 20 uppercaser rotator logger\n");
+//     printf(" echo 'hello' | ./analyzer 20 uppercaser rotator logger\n");
+//     printf(" echo '<END>' | ./analyzer 20 uppercaser rotator logger\n");
+// }
 
 int main(int argc, char *argv[]){
     // Step 1: Parse and validate command-line arguments
     if(argc < 3) {
-        fprintf(stderr, "Missing arguments\n");
+        fprintf(stderr, "At least one plugin must be specified\n");
         print_usage();
         return 1;
     }
     
-    int queue_size = atoi(argv[1]);
-    if(queue_size <= 0) {
-        fprintf(stderr, "Invalid queue size: %s\n", argv[1]);
+    // Parse queue_size robustly and ensure positive integer
+    char* endptr = NULL;
+    long qs = strtol(argv[1], &endptr, 10);
+    if(endptr == argv[1] || *endptr != '\0' || qs <= 0) {
+        fprintf(stderr, "Queue size must be positive\n");
         print_usage();
         return 1;
     }
+    int queue_size = (int)qs;
     
-    // Check all plugins are valid
+    // Validate plugin names
     for(int i = 2; i < argc; i++) {
         if(!is_valid_plugin(argv[i])) {
             fprintf(stderr, "Unknown plugin: %s\n", argv[i]);
