@@ -112,10 +112,25 @@ test_build_system() {
 test_argument_validation() {
     print_header "COMMAND LINE ARGUMENT VALIDATION"
     
-    run_test "No arguments shows usage" \
-        "$ANALYZER" \
-        "Usage: ./analyzer" \
-        "true"
+    # Test with explicit exit code checking
+    echo -e "\n${PASTEL_CYAN}🧪 TEST $((total + 1)): ${PASTEL_YELLOW}No arguments shows usage (exit code 1)${NC}"
+    total=$((total + 1))
+    local output exit_code
+    if output=$(timeout $TIMEOUT $ANALYZER 2>&1); then
+        exit_code=0
+    else
+        exit_code=$?
+    fi
+    
+    if [[ $exit_code -eq 1 ]] && [[ "$output" =~ "Usage: ./analyzer" ]]; then
+        echo -e "   ${PASTEL_GREEN}✅ PASSED ${DIM}(๑˃ᴗ˂)ﻭ${NC}"
+        passed=$((passed + 1))
+    else
+        echo -e "   ${PASTEL_RED}❌ FAILED ${DIM}(｡•́︿•̀｡)${NC}"
+        echo -e "   ${DIM}Expected exit code 1 and usage message${NC}"
+        echo -e "   ${DIM}Got exit code: $exit_code${NC}"
+        failed=$((failed + 1))
+    fi
     
     run_test "Missing plugins argument" \
         "$ANALYZER 10" \
@@ -242,6 +257,11 @@ test_error_handling() {
     run_test "Pipeline shutdown message present" \
         "echo -e 'test\n<END>' | $ANALYZER 10 logger" \
         "Pipeline shutdown complete"
+        
+        
+    run_test "Expander with empty string" \
+        "echo -e '\n<END>' | $ANALYZER 10 expander logger" \
+        "\\[logger\\]"
 }
 
 # ================================================================================
@@ -263,7 +283,6 @@ test_queue_capacity() {
         "echo -e 'item1\nitem2\nitem3\n<END>' | $ANALYZER 2 logger" \
         "\\[logger\\] item1.*\\[logger\\] item2.*\\[logger\\] item3"
         
-    # Removed bonus test for repeated plugin usage
 }
 
 # ================================================================================
@@ -283,6 +302,20 @@ test_string_lengths() {
     run_test "Long string processing (500 chars)" \
         "echo -e '${long_string}\n<END>' | $ANALYZER 20 logger" \
         "\\[logger\\] ${long_string}"
+        
+    # Test even longer string (1000 chars, closer to limit)
+    local very_long_string
+    very_long_string=$(printf 'B%.0s' {1..1000})  # 1000 B's
+    run_test "Very long string processing (1000 chars)" \
+        "echo -e '${very_long_string}\n<END>' | $ANALYZER 30 logger" \
+        "\\[logger\\] ${very_long_string}"
+        
+    # Test maximum length string (1023 chars - leaving room for newline)
+    local max_string
+    max_string=$(printf 'X%.0s' {1..1023})  # 1023 X's
+    run_test "Maximum string processing (1023 chars)" \
+        "echo -e '${max_string}\n<END>' | $ANALYZER 30 logger" \
+        "\\[logger\\] ${max_string}"
 }
 
 # ================================================================================
@@ -296,7 +329,13 @@ test_stress_scenarios() {
         "{ for i in {1..5}; do echo \"rapid\$i\"; done; echo '<END>'; } | $ANALYZER 3 logger" \
         "\\[logger\\] rapid1.*\\[logger\\] rapid5"
         
-    # Removed bonus test for mixed plugin types in long chain
+    run_test "Complex multi-plugin stress test" \
+        "echo -e 'stress\n<END>' | $ANALYZER 50 uppercaser rotator flipper expander logger" \
+        "\\[logger\\]"
+        
+    run_test "High-frequency processing (10 inputs)" \
+        "{ for i in {1..10}; do echo \"item\$i\"; done; echo '<END>'; } | $ANALYZER 5 logger" \
+        "\\[logger\\] item1.*\\[logger\\] item10"
 }
 
 # ================================================================================
@@ -333,17 +372,16 @@ print_final_results() {
     echo -e "${PASTEL_PINK}${BOLD}│                                                                │${NC}"
     
     if [[ $failed -eq 0 ]]; then
-        echo -e "${PASTEL_PINK}${BOLD}│${NC}     ${PASTEL_GREEN}${BOLD}🎉 ALL TESTS PASSED - READY FOR SUBMISSION! 🎉${NC}          ${PASTEL_PINK}${BOLD}│${NC}"
-        echo -e "${PASTEL_PINK}${BOLD}│${NC}           ${PASTEL_GREEN}Your project sparkles with perfection!${NC}            ${PASTEL_PINK}${BOLD}│${NC}"
+        echo -e "${PASTEL_PINK}${BOLD}│${NC}          ${PASTEL_GREEN}${BOLD}🎉 ALL TESTS PASSED SUCCESSFULLY 🎉${NC}                  ${PASTEL_PINK}${BOLD}│${NC}"
+        echo -e "${PASTEL_PINK}${BOLD}│${NC}           ${PASTEL_GREEN}Implementation meets all requirements${NC}             ${PASTEL_PINK}${BOLD}│${NC}"
         echo -e "${PASTEL_PINK}${BOLD}│${NC}                      ${DIM}✧･ﾟ: *✧･ﾟ:*${NC}                            ${PASTEL_PINK}${BOLD}│${NC}"
+
     elif [[ $pass_rate -ge 90 ]]; then
-        echo -e "${PASTEL_PINK}${BOLD}│${NC}       ${PASTEL_YELLOW}${BOLD}⚠️  ALMOST THERE - MINOR ADJUSTMENTS NEEDED${NC}          ${PASTEL_PINK}${BOLD}│${NC}"
-        echo -e "${PASTEL_PINK}${BOLD}│${NC}          ${PASTEL_YELLOW}Just a few tweaks to reach perfection!${NC}            ${PASTEL_PINK}${BOLD}│${NC}"
-        echo -e "${PASTEL_PINK}${BOLD}│${NC}                      ${DIM}(ﾉ◕ヮ◕)ﾉ*:･ﾟ✧${NC}                          ${PASTEL_PINK}${BOLD}│${NC}"
+        echo -e "${PASTEL_PINK}${BOLD}│${NC}            ${PASTEL_YELLOW}${BOLD}⚠️  MOSTLY PASSING - MINOR ISSUES${NC}                  ${PASTEL_PINK}${BOLD}│${NC}"
+        echo -e "${PASTEL_PINK}${BOLD}│${NC}              ${PASTEL_YELLOW}Some test cases require attention${NC}               ${PASTEL_PINK}${BOLD}│${NC}"
     else
-        echo -e "${PASTEL_PINK}${BOLD}│${NC}        ${PASTEL_RED}${BOLD}❌ NEEDS ATTENTION - MULTIPLE ISSUES${NC}               ${PASTEL_PINK}${BOLD}│${NC}"
-        echo -e "${PASTEL_PINK}${BOLD}│${NC}           ${PASTEL_RED}Don't give up! You've got this!${NC}                  ${PASTEL_PINK}${BOLD}│${NC}"
-        echo -e "${PASTEL_PINK}${BOLD}│${NC}                      ${DIM}(っ˘̩╭╮˘̩)っ${NC}                            ${PASTEL_PINK}${BOLD}│${NC}"
+        echo -e "${PASTEL_PINK}${BOLD}│${NC}             ${PASTEL_RED}${BOLD}❌ MULTIPLE TEST FAILURES${NC}                      ${PASTEL_PINK}${BOLD}│${NC}"
+        echo -e "${PASTEL_PINK}${BOLD}│${NC}              ${PASTEL_RED}Implementation needs corrections${NC}                ${PASTEL_PINK}${BOLD}│${NC}"
     fi
     
     echo -e "${PASTEL_PINK}${BOLD}│                                                                │${NC}"
